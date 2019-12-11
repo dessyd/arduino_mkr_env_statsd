@@ -45,6 +45,12 @@ void setup() {
   // This delay gives the chance to wait for a Serial Monitor without blocking if none is found
   delay(1500);
 
+  // Check if ENV board is present
+  if (!ENV.begin()) {
+    Serial.println("Failed to initialize MKR ENV shield!");
+    while (true);
+  }
+
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Communication with WiFi module failed!");
@@ -71,13 +77,6 @@ void setup() {
   Serial.print("Board ID: ");
   Serial.print(board_id);
   Serial.println(".");
-
-
-  // Check if ENV board is present
-  if (!ENV.begin()) {
-    Serial.println("Failed to initialize MKR ENV shield!");
-    while (true);
-  }
 
   // start UDP
   Udp.begin(localPort);
@@ -139,6 +138,3 @@ void array_to_string(byte array[], unsigned int len, char buffer[])
   }
   buffer[len * 2] = '\0';
 }
-
-
-
