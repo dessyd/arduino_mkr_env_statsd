@@ -10,9 +10,13 @@
 
 #undef NTP_SECTION
 
+
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 #include <Arduino_MKRENV.h>
+
+#define BOARD_TYPE mkr_1010
+#define SENSOR_TYPE mkr_env
 
 #define MAC_LENGTH 6
 #define STATSD_PORT_NUMBER 8125
@@ -32,9 +36,9 @@ const float DELTA_TEMP = 3.0;
 int status = WL_IDLE_STATUS;
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
 char ssid[] = SECRET_SSID;        // your network SSID (name)
-char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
-int keyIndex = 0;            // your network key Index number (needed only for WEP)
-byte mac[ MAC_LENGTH ]; // Holds board MAC address
+char pass[] = SECRET_PASS;        // your network password (use for WPA, or use as key for WEP)
+int keyIndex = 0;                 // your network key Index number (needed only for WEP)
+byte mac[ MAC_LENGTH ];           // Holds board MAC address
 char board_id[ 2 * MAC_LENGTH + 1 ] = ""; // Holds the HEX representation of the MAC address
 
 unsigned int localPort = 2390;      // local UDP port to listen on
@@ -128,15 +132,15 @@ void loop() {
 // Format UDP message according to statsd protocol
 void sendMeasure(char * m_name, float m_value) {
 
-
+  // "sensor.<measure_name>:<measure_value>|g|#<dimension_name>:<dimension_value>,..."
   Udp.beginPacket(splunk_ip, STATSD_PORT_NUMBER);
   Udp.print("sensor.");
   Udp.print(m_name);
   Udp.print(":");
   Udp.print(m_value);
-  Udp.print("|g|#board_type:mkr1010,board_id:");
+  Udp.print("|g|#board_id:");
   Udp.print(board_id);
-  Udp.print(",sensor_type:mkr_env");
+  Udp.print(",board_type:mkr1010,sensor_type:mkr_env");
   Udp.endPacket();
 
 }
