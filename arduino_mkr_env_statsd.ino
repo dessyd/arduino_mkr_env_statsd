@@ -8,9 +8,14 @@
 
 */
 
+#undef NTP_SECTION
+
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 #include <Arduino_MKRENV.h>
+
+#define MAC_LENGTH 6
+
 
 float humidity;
 float pressure;
@@ -28,8 +33,8 @@ int status = WL_IDLE_STATUS;
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;            // your network key Index number (needed only for WEP)
-byte mac[6]; // Holds board MAC address
-char board_id[6 + 6 + 1] = ""; // Holds the HEX representation of the MAC address
+byte mac[ MAC_LENGTH ]; // Holds board MAC address
+char board_id[ 2 * MAC_LENGTH + 1 ] = ""; // Holds the HEX representation of the MAC address
 
 unsigned int localPort = 2390;      // local UDP port to listen on
 
@@ -37,7 +42,15 @@ unsigned int localPort = 2390;      // local UDP port to listen on
 char splunk_server[] = SECRET_SPLUNK_SERVER; // Splunk server FQDN
 IPAddress splunk_ip;  // Will hold the current Splunk server IP address
 
+#ifdef NTP_SECTION
+// NTP time stamp is in the first 48 bytes of the message
+#define NTP_PACKET_SIZE  48
+byte packetBuffer[ NTP_PACKET_SIZE ]; //buffer to hold incoming and outgoing packets
+const char timeServer[] = "be.pool.ntp.org";
+#endif
+
 WiFiUDP Udp; // statsd uses UDP, let's initialize it
+
 
 void setup() {
 
@@ -48,6 +61,7 @@ void setup() {
   // Check if ENV board is present
   if (!ENV.begin()) {
     Serial.println("Failed to initialize MKR ENV shield!");
+    // don't continue
     while (true);
   }
 
