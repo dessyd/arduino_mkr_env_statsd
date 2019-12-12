@@ -15,6 +15,7 @@
 #include <Arduino_MKRENV.h>
 
 #define MAC_LENGTH 6
+#define STATSD_PORT_NUMBER 8125
 
 
 float humidity;
@@ -128,7 +129,7 @@ void loop() {
 void sendMeasure(char * m_name, float m_value) {
 
 
-  Udp.beginPacket(splunk_ip, 8125);
+  Udp.beginPacket(splunk_ip, STATSD_PORT_NUMBER);
   Udp.print("sensor.");
   Udp.print(m_name);
   Udp.print(":");
