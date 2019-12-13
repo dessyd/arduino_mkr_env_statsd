@@ -9,6 +9,7 @@
 */
 
 #undef NTP_SECTION
+#define NTP_SECTION
 
 
 #include <WiFiNINA.h>
@@ -20,6 +21,10 @@
 
 #define MAC_LENGTH 6
 #define STATSD_PORT_NUMBER 8125
+
+#ifdef NTP_SECTION
+#include <NTPClient.h>
+#endif
 
 
 float humidity;
@@ -47,14 +52,16 @@ unsigned int localPort = 2390;      // local UDP port to listen on
 char splunk_server[] = SECRET_SPLUNK_SERVER; // Splunk server FQDN
 IPAddress splunk_ip;  // Will hold the current Splunk server IP address
 
+WiFiUDP Udp; // statsd uses UDP, let's initialize it
+
 #ifdef NTP_SECTION
-// NTP time stamp is in the first 48 bytes of the message
-#define NTP_PACKET_SIZE  48
-byte packetBuffer[ NTP_PACKET_SIZE ]; //buffer to hold incoming and outgoing packets
-const char timeServer[] = "be.pool.ntp.org";
+// You can specify the time server pool and the offset (in seconds, can be
+// changed later with setTimeOffset() ). Additionaly you can specify the
+// update interval (in milliseconds, can be changed using setUpdateInterval() ).
+NTPClient timeClient(Udp, "be.pool.ntp.org", 3600, 60000);
 #endif
 
-WiFiUDP Udp; // statsd uses UDP, let's initialize it
+
 
 
 void setup() {
@@ -98,12 +105,21 @@ void setup() {
   Serial.print(board_id);
   Serial.println(".");
 
+#ifdef NTP_SECTION
+  timeClient.begin();
+#else
   // start UDP
   Udp.begin(localPort);
+#endif
 
 }
 
 void loop() {
+
+#ifdef NTP_SECTION
+  timeClient.update();
+//  Serial.println(timeClient.getFormattedTime());
+#endif
 
   // read all the sensor values
   temperature = ENV.readTemperature(CELSIUS) - DELTA_TEMP;
