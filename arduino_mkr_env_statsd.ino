@@ -83,11 +83,12 @@ void setup() {
   }
 
   // attempt to connect to Wifi network:
-  while (status != WL_CONNECTED) {
-    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-    status = WiFi.begin(ssid, pass);
-    // wait 10 seconds for connection:
-    delay(10000);
+  // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+  status = WiFi.begin(ssid, pass);
+  while ( WiFi.status() != WL_CONNECTED ) {
+    // Wait for connection
+    delay ( 500 );
+    Serial.print ( "." );
   }
 
   // Gets board MAC address
