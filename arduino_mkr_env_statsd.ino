@@ -1,5 +1,4 @@
 #include "arduino_secrets.h"
-
 /*
 
   Sends environmental data to a Splunk instance using the statsd protocol
@@ -9,8 +8,6 @@
 */
 
 #undef NTP_SECTION
-#define NTP_SECTION
-
 
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
@@ -25,7 +22,6 @@
 #ifdef NTP_SECTION
 #include <NTPClient.h>
 #endif
-
 
 float humidity;
 float pressure;
@@ -46,7 +42,8 @@ int keyIndex = 0;                 // your network key Index number (needed only 
 byte mac[ MAC_LENGTH ];           // Holds board MAC address
 char board_id[ 2 * MAC_LENGTH + 1 ] = ""; // Holds the HEX representation of the MAC address
 
-unsigned int localPort = 2390;      // local UDP port to listen on
+unsigned int localPort = 2390;    // local UDP port to listen on
+IPAddress local_ip;               // Board IP
 
 // Splunk server details
 char splunk_server[] = SECRET_SPLUNK_SERVER; // Splunk server FQDN
@@ -98,6 +95,8 @@ void setup() {
     Serial.print ( "." );
   }
 
+  local_ip = WiFi.localIP();
+  Serial.println(local_ip);
   // Gets board MAC address
   WiFi.macAddress(mac);
   array_to_string(mac, 6, board_id);
@@ -118,7 +117,7 @@ void loop() {
 
 #ifdef NTP_SECTION
   timeClient.update();
-//  Serial.println(timeClient.getFormattedTime());
+  Serial.println(timeClient.getFormattedTime());
 #endif
 
   // read all the sensor values
@@ -167,8 +166,8 @@ void array_to_string(byte array[], unsigned int len, char buffer[])
 {
   for (unsigned int i = 0; i < len; i++)
   {
-    byte nib1 = (array[i] >> 4) & 0x0F;
-    byte nib2 = (array[i] >> 0) & 0x0F;
+    byte nib1 = (array[len - i - 1] >> 4) & 0x0F;
+    byte nib2 = (array[len - i - 1] >> 0) & 0x0F;
     buffer[i * 2 + 0] = nib1  < 0xA ? '0' + nib1  : 'A' + nib1  - 0xA;
     buffer[i * 2 + 1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
   }
