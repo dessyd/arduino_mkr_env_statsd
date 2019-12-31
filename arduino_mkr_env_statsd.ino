@@ -7,10 +7,14 @@
 
 */
 
-#undef NTP_SECTION
+#define DEBUG
+#undef DEBUG
 
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
+#include <RTCZero.h>
+RTCZero rtc;
+
 #include <Arduino_MKRENV.h>
 
 #define BOARD_TYPE mkr_1010
@@ -18,10 +22,6 @@
 
 #define MAC_LENGTH 6
 #define STATSD_PORT_NUMBER 8125
-
-#ifdef NTP_SECTION
-#include <NTPClient.h>
-#endif
 
 float humidity;
 float pressure;
@@ -39,26 +39,16 @@ int status = WL_IDLE_STATUS;
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;        // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;                 // your network key Index number (needed only for WEP)
-byte mac[ MAC_LENGTH ];           // Holds board MAC address
+
 char board_id[ 2 * MAC_LENGTH + 1 ] = ""; // Holds the HEX representation of the MAC address
 
-unsigned int localPort = 2390;    // local UDP port to listen on
-IPAddress local_ip;               // Board IP
+const int localPort = 2390;    // local UDP port to listen on
 
 // Splunk server details
 char splunk_server[] = SECRET_SPLUNK_SERVER; // Splunk server FQDN
 IPAddress splunk_ip;  // Will hold the current Splunk server IP address
 
 WiFiUDP Udp; // statsd uses UDP, let's initialize it
-
-#ifdef NTP_SECTION
-// You can specify the time server pool and the offset (in seconds, can be
-// changed later with setTimeOffset() ). Additionaly you can specify the
-// update interval (in milliseconds, can be changed using setUpdateInterval() ).
-NTPClient timeClient(Udp, "be.pool.ntp.org", 3600, 60000);
-#endif
-
-
 
 
 void setup() {
@@ -74,51 +64,23 @@ void setup() {
     while (true);
   }
 
-  // check for the WiFi module:
-  if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed!");
-    // don't continue
-    while (true);
-  }
+  configNetwork();
 
-  String fv = WiFi.firmwareVersion();
-  if (fv < "1.0.0") {
-    Serial.println("Please upgrade the firmware");
-  }
+  getBoardID(board_id);
 
-  // attempt to connect to Wifi network:
-  // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-  status = WiFi.begin(ssid, pass);
-  while ( WiFi.status() != WL_CONNECTED ) {
-    // Wait for connection
-    delay ( 500 );
-    Serial.print ( "." );
-  }
-
-  local_ip = WiFi.localIP();
-  Serial.println(local_ip);
-  // Gets board MAC address
-  WiFi.macAddress(mac);
-  array_to_string(mac, 6, board_id);
+#ifdef DEBUG
   Serial.print("Board ID: ");
   Serial.print(board_id);
   Serial.println(".");
-
-#ifdef NTP_SECTION
-  timeClient.begin();
-#else
-  // start UDP
-  Udp.begin(localPort);
 #endif
+
+  Udp.begin(localPort);
+
+  configRTC();
 
 }
 
 void loop() {
-
-#ifdef NTP_SECTION
-  timeClient.update();
-  Serial.println(timeClient.getFormattedTime());
-#endif
 
   // read all the sensor values
   temperature = ENV.readTemperature(CELSIUS) - DELTA_TEMP;
@@ -161,15 +123,3 @@ void sendMeasure(char * m_name, float m_value) {
 
 }
 
-// Convert MAC address to its corresponding HEX string
-void array_to_string(byte array[], unsigned int len, char buffer[])
-{
-  for (unsigned int i = 0; i < len; i++)
-  {
-    byte nib1 = (array[len - i - 1] >> 4) & 0x0F;
-    byte nib2 = (array[len - i - 1] >> 0) & 0x0F;
-    buffer[i * 2 + 0] = nib1  < 0xA ? '0' + nib1  : 'A' + nib1  - 0xA;
-    buffer[i * 2 + 1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
-  }
-  buffer[len * 2] = '\0';
-}
