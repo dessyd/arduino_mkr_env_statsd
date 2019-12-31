@@ -6,9 +6,9 @@
   Dec 2019
 
 */
-
-#define DEBUG
 #undef DEBUG
+#define DEBUG
+
 
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
@@ -122,4 +122,3 @@ void sendMeasure(char * m_name, float m_value) {
   Udp.endPacket();
 
 }
-
